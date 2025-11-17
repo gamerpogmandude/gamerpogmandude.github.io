@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Random Word Selector</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1>Random Word Selector</h1>
+
+  <textarea id="passageInput" placeholder="Paste your passage here..." rows="6"></textarea>
+  <br/>
+    <label for="countInput">How many words to pick:</label>
+  <input type="number" id="countInput" min="1" value="5"/>
+  <br/>
+  <label for="highlightToggle">Highlight Selected Words
+    <input type="checkbox" id="highlightToggle">
+  </label>
+  <br/>
+  <br/>
+  <button id="runButton">Select Words</button>
+
+  <h2>Passage</h2>
+  <div id="passageDisplay"></div>
+
+  <style>
+    .highlight { background: yellow; color: black; }
+  </style>
+
+  <script>
+    const passageDisplay = document.getElementById('passageDisplay');
+    const results = document.getElementById('results');
+    const highlightToggle = document.getElementById('highlightToggle');
+    const passageInput = document.getElementById('passageInput');
+
+    // clear previous results
+    results.innerHTML = '';
+
+    function escapeRegex(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+
+    function setRawPassage() {
+      // keep the raw text in textContent so we can re-run replacements reliably
+      passageDisplay.textContent = passageInput.value || '';
+    }
+
+    function highlightMatches() {
+      // if highlighting is off, restore plain text
+      if (!highlightToggle.checked) {
+        passageDisplay.innerHTML = passageDisplay.textContent;
+        return;
+      }
+
+      // collect words from #results
+      const words = results.innerText
+        .split(/\s+/)
+        .map(w => w.trim())
+        .filter(Boolean);
+
+      if (words.length === 0) {
+        passageDisplay.innerHTML = passageDisplay.textContent;
+        return;
+      }
+
+      // build regex that matches whole words, case-insensitive
+      const unique = Array.from(new Set(words));
+      const pattern = unique.map(escapeRegex).join('|');
+      const re = new RegExp('\\b(' + pattern + ')\\b', 'gi');
+
+      // replace matches with highlighted spans
+      const text = passageDisplay.textContent;
+      passageDisplay.innerHTML = text.replace(re, '<span class="highlight">$1</span>');
+    }
+
+    // react to changes: results, passage input, or toggle
+    const mo = new MutationObserver(highlightMatches);
+    mo.observe(results, { childList: true, subtree: true, characterData: true });
+
+    passageInput.addEventListener('input', () => { setRawPassage(); highlightMatches(); });
+    highlightToggle.addEventListener('change', highlightMatches);
+
+    // initialize
+    setRawPassage();
+    highlightMatches();
+  </script>
+
+  <h2>Selected Words</h2>
+  <div id="results"></div>
+
+  <script type="module" src="script.js"></script>
+
+  <label for="passageSelect">Choose a passage:</label>
+  <select id="passageSelect">
+    <option value="">--Select a passage--</option>
+  </select>
+
+</body>
+</html>
